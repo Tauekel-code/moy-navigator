@@ -55,7 +55,7 @@ npm install
 npm run dev
 ```
 
-Откройте [http://localhost:3000](http://localhost:3000) — приложение сразу готово к работе,
+Откройте [http://localhost:3900](http://localhost:3900) — приложение сразу готово к работе,
 без регистрации. База данных создастся автоматически в `.local-data/app.db`
 (эта папка в `.gitignore`, не попадёт в git).
 
