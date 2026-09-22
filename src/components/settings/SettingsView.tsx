@@ -9,13 +9,14 @@ import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/api-client";
 import { createClient } from "@/lib/supabase/client";
 import { detectBrowserTimezone } from "@/lib/dates";
+import { isLocalMode } from "@/lib/config";
 import type { UserProfile } from "@/types/user";
 import type { NotificationSettings } from "@/types/notification";
 import type { TelegramConnection } from "@/types/notification";
 
 type Tab = "profile" | "notifications" | "telegram" | "data" | "security";
 
-const TABS: { key: Tab; label: string }[] = [
+const ALL_TABS: { key: Tab; label: string }[] = [
   { key: "profile", label: "Профиль" },
   { key: "notifications", label: "Уведомления" },
   { key: "telegram", label: "Telegram" },
@@ -25,10 +26,17 @@ const TABS: { key: Tab; label: string }[] = [
 
 export function SettingsView() {
   const [tab, setTab] = useState<Tab>("profile");
+  const local = isLocalMode();
+  const TABS = local ? ALL_TABS.filter((t) => t.key !== "telegram") : ALL_TABS;
 
   return (
     <div className="max-w-xl mx-auto">
-      <h1 className="text-xl font-semibold mb-4">Настройки</h1>
+      <div className="flex items-center gap-2 mb-4">
+        <h1 className="text-xl font-semibold">Настройки</h1>
+        {local && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-surface-muted text-foreground-muted">Локальный режим</span>
+        )}
+      </div>
 
       <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
         {TABS.map((t) => (
@@ -82,10 +90,12 @@ function ProfileTab() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <Label>Email</Label>
-        <Input value={email} disabled />
-      </div>
+      {!isLocalMode() && (
+        <div>
+          <Label>Email</Label>
+          <Input value={email} disabled />
+        </div>
+      )}
       <div>
         <Label>Имя</Label>
         <Input
@@ -164,7 +174,9 @@ function NotificationsTab() {
         checked={settings.inAppEnabled}
         onChange={(v) => save({ inAppEnabled: v })}
       />
-      <ToggleRow label="Уведомления в Telegram" checked={settings.telegramEnabled} onChange={(v) => save({ telegramEnabled: v })} />
+      {!isLocalMode() && (
+        <ToggleRow label="Уведомления в Telegram" checked={settings.telegramEnabled} onChange={(v) => save({ telegramEnabled: v })} />
+      )}
       <ToggleRow label="Предупреждать о конфликте времени" checked={settings.conflictNotify} onChange={(v) => save({ conflictNotify: v })} />
       <ToggleRow label="Уведомлять о просрочке" checked={settings.overdueNotify} onChange={(v) => save({ overdueNotify: v })} />
 
@@ -336,6 +348,8 @@ function SecurityTab() {
     router.refresh();
   }
 
+  const local = isLocalMode();
+
   async function handleDelete() {
     if (confirmText !== "УДАЛИТЬ") return;
     if (!confirm("Это действие необратимо. Все данные будут удалены. Продолжить?")) return;
@@ -343,8 +357,9 @@ function SecurityTab() {
     setDeleting(true);
     try {
       await api.post("/api/account/delete");
-      show("Аккаунт удалён", "success");
-      router.push("/login");
+      show(local ? "Локальные данные удалены" : "Аккаунт удалён", "success");
+      router.push(local ? "/today" : "/login");
+      router.refresh();
     } catch (err) {
       show(err instanceof Error ? err.message : "Ошибка удаления", "error");
     } finally {
@@ -354,23 +369,27 @@ function SecurityTab() {
 
   return (
     <div className="space-y-6">
-      <Button variant="outline" onClick={handleSignOut}>
-        Выйти из аккаунта
-      </Button>
+      {!local && (
+        <Button variant="outline" onClick={handleSignOut}>
+          Выйти из аккаунта
+        </Button>
+      )}
 
       <div className="border border-red-200 rounded-xl p-4 space-y-3">
         <p className="text-sm font-medium text-red-600 flex items-center gap-1.5">
-          <AlertTriangle size={15} /> Удаление аккаунта
+          <AlertTriangle size={15} /> {local ? "Очистить все локальные данные" : "Удаление аккаунта"}
         </p>
         <p className="text-xs text-foreground-muted">
-          Раздел 68 ТЗ: перед удалением рекомендуем экспортировать данные во вкладке «Данные». Это действие необратимо.
+          {local
+            ? "Полностью удалит все действия, проекты, контакты и историю на этом компьютере. Перед этим рекомендуем экспортировать данные во вкладке «Данные». Это действие необратимо."
+            : "Раздел 68 ТЗ: перед удалением рекомендуем экспортировать данные во вкладке «Данные». Это действие необратимо."}
         </p>
         <div>
           <Label>Введите УДАЛИТЬ для подтверждения</Label>
           <Input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} />
         </div>
         <Button variant="danger" disabled={confirmText !== "УДАЛИТЬ" || deleting} onClick={handleDelete}>
-          {deleting ? "Удаляем…" : "Удалить аккаунт навсегда"}
+          {deleting ? "Удаляем…" : local ? "Удалить все локальные данные" : "Удалить аккаунт навсегда"}
         </Button>
       </div>
     </div>

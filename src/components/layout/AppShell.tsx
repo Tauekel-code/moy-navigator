@@ -9,6 +9,10 @@ import { NotificationsBell } from "./NotificationsBell";
 import { SearchModal } from "./SearchModal";
 import { ActionModal } from "@/components/actions/ActionModal";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api-client";
+import { useToast } from "@/components/ui/Toast";
+
+const DUE_REMINDERS_POLL_MS = 45_000;
 
 interface Props {
   children: ReactNode;
@@ -17,9 +21,18 @@ interface Props {
 }
 
 /** Раздел 5, 55, 56, 58 ТЗ: навигация + шапка + мобильное меню + горячие клавиши. */
+interface DueReminder {
+  reminderId: string;
+  actionId: string;
+  actionTitle: string;
+  actionDate: string | null;
+  startTime: string | null;
+}
+
 export function AppShell({ children, timezone, displayName }: Props) {
   const pathname = usePathname();
   const router = useRouter();
+  const { show } = useToast();
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -49,6 +62,27 @@ export function AppShell({ children, timezone, displayName }: Props) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    async function poll() {
+      try {
+        const { due } = await api.get<{ due: DueReminder[] }>("/api/reminders/due");
+        if (due.length > 0) {
+          for (const reminder of due) {
+            show(`🔔 ${reminder.actionTitle}${reminder.startTime ? ` — ${reminder.startTime}` : ""}`);
+          }
+          window.dispatchEvent(new CustomEvent("notifications:changed"));
+        }
+      } catch {
+        // тихо игнорируем — сработает на следующем опросе
+      }
+    }
+
+    poll();
+    const interval = setInterval(poll, DUE_REMINDERS_POLL_MS);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function refresh() {

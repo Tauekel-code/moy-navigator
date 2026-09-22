@@ -22,7 +22,7 @@ export function NotificationsBell({ timezone }: { timezone: string }) {
   const [items, setItems] = useState<NotificationLogEntry[]>([]);
   const [unread, setUnread] = useState(0);
 
-  useEffect(() => {
+  function load() {
     api
       .get<{ notifications: NotificationLogEntry[]; unreadCount: number }>("/api/notifications")
       .then((r) => {
@@ -30,6 +30,12 @@ export function NotificationsBell({ timezone }: { timezone: string }) {
         setUnread(r.unreadCount);
       })
       .catch(() => {});
+  }
+
+  useEffect(() => {
+    load();
+    window.addEventListener("notifications:changed", load);
+    return () => window.removeEventListener("notifications:changed", load);
   }, []);
 
   async function handleOpen() {

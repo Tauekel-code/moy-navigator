@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAction, listActionsFiltered } from "@/lib/database/actions";
 import type { ActionType, ActionPriority } from "@/types/action";
 
 export interface ImportRow {
@@ -16,16 +17,21 @@ export interface ImportResult {
   conflicts: { title: string; actionDate: string | null }[];
 }
 
-/** Раздел 40: импорт проверяет дубли и предупреждает о конфликтах, но не блокирует сохранение. */
+/**
+ * Раздел 40: импорт проверяет дубли и предупреждает о конфликтах, но не
+ * блокирует сохранение. Идёт через тот же фасад createAction/listActionsFiltered,
+ * что и обычное создание действий — поэтому одинаково работает в облачном
+ * и локальном режимах.
+ */
 export async function importActions(supabase: SupabaseClient, userId: string, rows: ImportRow[]): Promise<ImportResult> {
-  const { data: existing, error } = await supabase
-    .from("actions")
-    .select("title, action_date, start_time")
-    .eq("user_id", userId)
-    .eq("is_archived", false);
-  if (error) throw error;
+  const { actions: existingActions } = await listActionsFiltered(supabase, userId, { includeArchived: false, pageSize: 100000 });
 
-  const existingKeys = new Set((existing ?? []).map((e) => `${e.title}__${e.action_date}__${e.start_time}`));
+  const existingKeys = new Set(existingActions.map((a) => `${a.title}__${a.actionDate}__${a.startTime}`));
+  const dateCounts = new Map<string, number>();
+  for (const a of existingActions) {
+    if (!a.actionDate) continue;
+    dateCounts.set(a.actionDate, (dateCounts.get(a.actionDate) ?? 0) + 1);
+  }
 
   let imported = 0;
   let skippedDuplicates = 0;
@@ -38,28 +44,23 @@ export async function importActions(supabase: SupabaseClient, userId: string, ro
       continue;
     }
 
-    const { error: insertErr } = await supabase.from("actions").insert({
-      user_id: userId,
+    await createAction(supabase, userId, {
       title: row.title,
       type: row.type,
-      action_date: row.actionDate,
-      start_time: row.startTime,
-      end_time: row.endTime,
+      actionDate: row.actionDate,
+      startTime: row.startTime,
+      endTime: row.endTime,
+      durationMinutes: null,
+      allDay: false,
+      timezone: null,
       priority: row.priority,
       status: "planned",
     });
-    if (insertErr) throw insertErr;
 
     if (row.actionDate) {
-      const { data: sameDay } = await supabase
-        .from("actions")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("action_date", row.actionDate)
-        .eq("is_archived", false);
-      if ((sameDay?.length ?? 0) > 1) {
-        conflicts.push({ title: row.title, actionDate: row.actionDate });
-      }
+      const nextCount = (dateCounts.get(row.actionDate) ?? 0) + 1;
+      dateCounts.set(row.actionDate, nextCount);
+      if (nextCount > 1) conflicts.push({ title: row.title, actionDate: row.actionDate });
     }
 
     existingKeys.add(key);
