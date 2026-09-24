@@ -3,6 +3,7 @@
     { "path": "/api/cron/reminders", "schedule": "* * * * *" },
     { "path": "/api/cron/morning-plan", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/evening-review", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/overdue-check", "schedule": "*/15 * * * *" }
+    { "path": "/api/cron/overdue-check", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/weekly-review", "schedule": "*/5 * * * *" }
   ]
 }

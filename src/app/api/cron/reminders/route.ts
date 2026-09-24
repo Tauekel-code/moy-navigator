@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCronRequest } from "@/lib/cron/verify";
 import { mapAction } from "@/lib/database/mappers";
 import { dispatchNotification } from "@/lib/notifications/service";
-import { formatReminderMessage } from "@/lib/telegram/messages";
+import { formatReminderMessage, reminderKeyboard } from "@/lib/telegram/messages";
 
 export const maxDuration = 60;
 
@@ -57,6 +57,7 @@ export async function GET(req: NextRequest) {
       channels,
       telegramChatId: telegram?.telegram_chat_id,
       telegramText: formatReminderMessage(action),
+      telegramKeyboard: reminderKeyboard(action.id, action.actionDate),
       actionId: action.id,
       reminderId: reminder.id,
       payload: { title: action.title, actionDate: action.actionDate, startTime: action.startTime },

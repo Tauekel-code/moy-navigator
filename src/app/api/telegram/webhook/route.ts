@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { confirmTelegramConnection, findUserByTelegramChatId } from "@/lib/database/telegram";
-import { sendTelegramMessage } from "@/lib/telegram/bot";
+import { sendTelegramMessage, answerCallbackQuery } from "@/lib/telegram/bot";
 import { formatConnectSuccessMessage, formatMorningPlan } from "@/lib/telegram/messages";
-import { listActionsForRange } from "@/lib/database/actions";
+import { listActionsForRange, setActionStatus } from "@/lib/database/actions";
+import { rescheduleAction, resolvePostponeShortcut } from "@/lib/database/schedule";
 import { computeFreeSlots } from "@/lib/database/schedule";
 import { getUserProfile } from "@/lib/database/settings";
 import { todayInTz, addCalendarDays } from "@/lib/dates";
@@ -21,6 +22,12 @@ export async function POST(req: NextRequest) {
   }
 
   const update = (await req.json()) as TelegramUpdate;
+
+  if (update.callback_query) {
+    await handleCallback(update.callback_query);
+    return NextResponse.json({ ok: true });
+  }
+
   const message = update.message;
   if (!message?.text) return NextResponse.json({ ok: true });
 
@@ -75,4 +82,39 @@ export async function POST(req: NextRequest) {
 
   await sendTelegramMessage(chatId, "Команда пока не поддерживается. Доступно: /today, /tomorrow.");
   return NextResponse.json({ ok: true });
+}
+
+/** Раздел 10 ТЗ: кнопки под напоминанием — «Выполнено» и «Перенести». */
+async function handleCallback(cb: NonNullable<TelegramUpdate["callback_query"]>) {
+  const supabase = createAdminClient();
+  const chatId = cb.message ? String(cb.message.chat.id) : null;
+  const [kind, actionId] = (cb.data ?? "").split(":");
+  if (!chatId || !actionId) return answerCallbackQuery(cb.id, "Неизвестная команда");
+
+  const userId = await findUserByTelegramChatId(supabase, chatId);
+  if (!userId) return answerCallbackQuery(cb.id, "Чат не подключён");
+
+  // admin-клиент обходит RLS — владельца задачи проверяем явно
+  const { data: action } = await supabase
+    .from("actions")
+    .select("user_id, action_date, start_time")
+    .eq("id", actionId)
+    .maybeSingle();
+  if (!action || action.user_id !== userId) return answerCallbackQuery(cb.id, "Задача не найдена");
+
+  if (kind === "done") {
+    await setActionStatus(supabase, actionId, userId, "completed");
+    return answerCallbackQuery(cb.id, "Отмечено выполненным ✅");
+  }
+
+  if (kind === "snooze") {
+    const profile = await getUserProfile(supabase, userId);
+    const timezone = profile?.timezone ?? "UTC";
+    const date = action.action_date ?? todayInTz(timezone);
+    const target = resolvePostponeShortcut("1h", date, action.start_time);
+    await rescheduleAction(supabase, userId, actionId, target.date, target.time, timezone, "this");
+    return answerCallbackQuery(cb.id, `Перенесено на ${target.time ?? "позже"} ⏰`);
+  }
+
+  return answerCallbackQuery(cb.id, "Неизвестная команда");
 }

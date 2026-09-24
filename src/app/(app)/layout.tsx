@@ -12,6 +12,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect("/login");
 
   const profile = await getUserProfile(supabase, user.id);
+  if (profile && !profile.onboardingCompletedAt) redirect("/onboarding");
 
   return (
     <AppShell timezone={profile?.timezone ?? "UTC"} displayName={profile?.displayName ?? null}>

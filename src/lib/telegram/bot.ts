@@ -8,17 +8,32 @@ function botToken(): string {
   return token;
 }
 
-export async function sendTelegramMessage(chatId: string, text: string): Promise<void> {
+export type InlineKeyboard = { text: string; callback_data?: string; url?: string }[][];
+
+export async function sendTelegramMessage(chatId: string, text: string, inlineKeyboard?: InlineKeyboard): Promise<void> {
   const res = await fetch(`${TELEGRAM_API}/bot${botToken()}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: "HTML",
+      ...(inlineKeyboard ? { reply_markup: { inline_keyboard: inlineKeyboard } } : {}),
+    }),
   });
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`Telegram sendMessage failed: ${res.status} ${body}`);
   }
+}
+
+export async function answerCallbackQuery(callbackQueryId: string, text: string): Promise<void> {
+  await fetch(`${TELEGRAM_API}/bot${botToken()}/answerCallbackQuery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ callback_query_id: callbackQueryId, text }),
+  });
 }
 
 export async function setTelegramWebhook(url: string, secretToken: string): Promise<void> {
@@ -31,6 +46,11 @@ export async function setTelegramWebhook(url: string, secretToken: string): Prom
 }
 
 export interface TelegramUpdate {
+  callback_query?: {
+    id: string;
+    data?: string;
+    message?: { chat: { id: number } };
+  };
   message?: {
     chat: { id: number };
     from?: { username?: string; id: number };

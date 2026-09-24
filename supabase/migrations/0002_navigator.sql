@@ -30,6 +30,9 @@ create type daily_plan_status as enum ('proposed', 'accepted', 'modified');
 alter type action_status add value if not exists 'skipped';
 alter type action_status add value if not exists 'deferred';
 
+-- Раздел 22: недельный обзор в Telegram
+alter type notification_type add value if not exists 'weekly_review';
+
 -- ----------------------------------------------------------------------------
 -- Раздел 3: сферы жизни
 -- ----------------------------------------------------------------------------

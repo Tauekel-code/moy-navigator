@@ -69,3 +69,28 @@ export function formatOverdueMessage(actions: Action[]): string {
 export function formatConnectSuccessMessage(): string {
   return "✅ Telegram успешно подключён к вашему расписанию. Теперь вы будете получать напоминания, утренний план и вечерний итог дня здесь.";
 }
+
+/** Раздел 10 ТЗ: кнопки под напоминанием — Выполнено / Перенести / Открыть задачу. */
+export function reminderKeyboard(actionId: string, actionDate: string | null) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const row = [
+    { text: "✅ Выполнено", callback_data: `done:${actionId}` },
+    { text: "⏰ Перенести на час", callback_data: `snooze:${actionId}` },
+  ];
+  const keyboard: { text: string; callback_data?: string; url?: string }[][] = [row];
+  if (appUrl) keyboard.push([{ text: "Открыть задачу", url: `${appUrl}/today${actionDate ? `?date=${actionDate}` : ""}` }]);
+  return keyboard;
+}
+
+/** Раздел 22 ТЗ: недельный обзор, напоминание о целях и неразобранных идеях. */
+export function formatWeeklyReview(p: { completed: number; planned: number; rate: number; stalledGoals: number; unreviewedIdeas: number }): string {
+  const lines = [
+    "📊 <b>Недельный обзор</b>",
+    "",
+    `Выполнено: ${p.completed} из ${p.planned} (${p.rate}%)`,
+  ];
+  if (p.stalledGoals > 0) lines.push(`🎯 Целей без движения: ${p.stalledGoals}`);
+  if (p.unreviewedIdeas > 0) lines.push(`💡 Неразобранных идей: ${p.unreviewedIdeas}`);
+  lines.push("", "Откройте приложение, чтобы обновить оценки сфер и спланировать неделю.");
+  return lines.join("\n");
+}

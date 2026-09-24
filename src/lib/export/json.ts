@@ -13,7 +13,7 @@ function stripJoinedAction(row: any) {
 export async function exportUserDataAsJson(supabase: SupabaseClient, userId: string) {
   if (isLocalMode()) return exportLocalUserDataAsJson(userId);
 
-  const [actions, projects, contacts, contexts, results, reminders, history, reviews, recurrenceRules] = await Promise.all([
+  const [actions, projects, contacts, contexts, results, reminders, history, reviews, recurrenceRules, lifeAreas, lifeAreaScores, goals, goalScores, subgoals, goalHistory, ideas, ideaHistory, dailyPlans] = await Promise.all([
     supabase.from("actions").select("*").eq("user_id", userId),
     supabase.from("projects").select("*").eq("user_id", userId),
     supabase.from("contacts").select("*").eq("user_id", userId),
@@ -23,6 +23,15 @@ export async function exportUserDataAsJson(supabase: SupabaseClient, userId: str
     supabase.from("action_history").select("*").eq("user_id", userId),
     supabase.from("daily_reviews").select("*").eq("user_id", userId),
     supabase.from("recurrence_rules").select("*").eq("user_id", userId),
+    supabase.from("life_areas").select("*").eq("user_id", userId),
+    supabase.from("life_area_scores").select("*").eq("user_id", userId),
+    supabase.from("goals").select("*").eq("user_id", userId),
+    supabase.from("goal_scores").select("*").eq("user_id", userId),
+    supabase.from("subgoals").select("*").eq("user_id", userId),
+    supabase.from("goal_history").select("*").eq("user_id", userId),
+    supabase.from("ideas").select("*").eq("user_id", userId),
+    supabase.from("idea_history").select("*").eq("user_id", userId),
+    supabase.from("daily_plans").select("*").eq("user_id", userId),
   ]);
 
   return {
@@ -38,8 +47,22 @@ export async function exportUserDataAsJson(supabase: SupabaseClient, userId: str
       actionHistory: history.data ?? [],
       dailyReviews: reviews.data ?? [],
       recurrenceRules: recurrenceRules.data ?? [],
+      lifeAreas: lifeAreas.data ?? [],
+      lifeAreaScores: lifeAreaScores.data ?? [],
+      goals: goals.data ?? [],
+      goalScores: goalScores.data ?? [],
+      subgoals: subgoals.data ?? [],
+      goalHistory: goalHistory.data ?? [],
+      ideas: ideas.data ?? [],
+      ideaHistory: ideaHistory.data ?? [],
+      dailyPlans: dailyPlans.data ?? [],
     },
   };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseHistoryJson(row: any) {
+  return { ...row, old_value: row.old_value ? JSON.parse(row.old_value) : null, new_value: row.new_value ? JSON.parse(row.new_value) : null };
 }
 
 function exportLocalUserDataAsJson(userId: string) {
@@ -71,6 +94,15 @@ function exportLocalUserDataAsJson(userId: string) {
       actionHistory,
       dailyReviews: q("select * from daily_reviews where user_id = ?"),
       recurrenceRules: q("select * from recurrence_rules where user_id = ?"),
+      lifeAreas: q("select * from life_areas where user_id = ?").map((r) => ({ ...r, is_archived: !!r.is_archived })),
+      lifeAreaScores: q("select * from life_area_scores where user_id = ?"),
+      goals: q("select * from goals where user_id = ?").map((r) => ({ ...r, is_archived: !!r.is_archived })),
+      goalScores: q("select * from goal_scores where user_id = ?"),
+      subgoals: q("select * from subgoals where user_id = ?"),
+      goalHistory: q("select * from goal_history where user_id = ?").map(parseHistoryJson),
+      ideas: q("select * from ideas where user_id = ?").map((r) => ({ ...r, is_archived: !!r.is_archived })),
+      ideaHistory: q("select * from idea_history where user_id = ?").map(parseHistoryJson),
+      dailyPlans: q("select * from daily_plans where user_id = ?"),
     },
   };
 }

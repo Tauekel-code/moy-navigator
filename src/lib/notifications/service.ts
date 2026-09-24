@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendTelegramMessage } from "@/lib/telegram/bot";
+import { sendTelegramMessage, type InlineKeyboard } from "@/lib/telegram/bot";
 import type { NotificationType, NotificationChannel } from "@/types/notification";
 
 /**
@@ -16,6 +16,7 @@ export interface DispatchNotificationParams {
   channels: NotificationChannel[];
   telegramChatId?: string | null;
   telegramText?: string;
+  telegramKeyboard?: InlineKeyboard;
   actionId?: string | null;
   reminderId?: string | null;
   payload?: Record<string, unknown>;
@@ -26,7 +27,7 @@ export async function dispatchNotification(supabase: SupabaseClient, params: Dis
     if (channel === "telegram") {
       if (!params.telegramChatId || !params.telegramText) continue;
       try {
-        await sendTelegramMessage(params.telegramChatId, params.telegramText);
+        await sendTelegramMessage(params.telegramChatId, params.telegramText, params.telegramKeyboard);
       } catch (err) {
         await supabase.from("notifications_log").insert({
           user_id: params.userId,

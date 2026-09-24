@@ -13,6 +13,7 @@ import {
   Target,
   Compass,
   BarChart3,
+  CalendarCheck,
 } from "lucide-react";
 
 // Раздел 30 «Дополнения к ТЗ»: Сегодня / Календарь / Входящие / Цели / Сферы /
@@ -30,6 +31,7 @@ export const NAV_ITEMS = [
   { href: "/contacts", label: "Контакты", icon: Users },
   { href: "/history", label: "История", icon: History },
   { href: "/stats", label: "Статистика", icon: BarChart3 },
+  { href: "/weekly-review", label: "Недельный обзор", icon: CalendarCheck },
   { href: "/reviews", label: "Итоги дня", icon: ClipboardList },
   { href: "/archive", label: "Архив", icon: Archive },
   { href: "/settings", label: "Настройки", icon: Settings },
