@@ -18,7 +18,7 @@ export async function sendTelegramMessage(chatId: string, text: string, inlineKe
       chat_id: chatId,
       text,
       parse_mode: "HTML",
-      ...(inlineKeyboard ? { reply_markup: { inline_keyboard: inlineKeyboard } } : {}),
+      ...(inlineKeyboard && inlineKeyboard.length > 0 ? { reply_markup: { inline_keyboard: inlineKeyboard } } : {}),
     }),
   });
 

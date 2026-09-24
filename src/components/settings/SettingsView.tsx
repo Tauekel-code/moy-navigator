@@ -232,6 +232,21 @@ function TelegramTab() {
     }
   }
 
+  const [chatId, setChatId] = useState("");
+  async function connectManual() {
+    setLoading(true);
+    try {
+      await api.post("/api/telegram/connect-manual", { chatId });
+      show("Telegram подключён — проверьте сообщение от бота", "success");
+      setChatId("");
+      load();
+    } catch (err) {
+      show(err instanceof Error ? err.message : "Ошибка", "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function disconnect() {
     await api.post("/api/telegram/disconnect");
     show("Telegram отключён", "success");
@@ -266,6 +281,16 @@ function TelegramTab() {
               <LinkIcon size={13} /> Открыть бота вручную
             </a>
           )}
+          <div className="border-t border-border pt-3 space-y-2">
+            <p className="text-sm font-medium">Или по Chat ID (если бот уже используется в другом проекте)</p>
+            <div className="flex gap-2">
+              <Input placeholder="Ваш Chat ID, например 123456789" value={chatId} onChange={(e) => setChatId(e.target.value)} />
+              <Button variant="outline" disabled={loading || !chatId.trim()} onClick={connectManual}>
+                Подключить
+              </Button>
+            </div>
+            <p className="text-xs text-foreground-muted">Узнать свой Chat ID можно у бота @userinfobot. Сначала напишите своему боту любое сообщение.</p>
+          </div>
           <p className="text-xs text-foreground-muted">
             Если бот не настроен администратором (переменные TELEGRAM_BOT_TOKEN / NEXT_PUBLIC_TELEGRAM_BOT_USERNAME), ссылка будет
             недоступна — см. README по настройке.

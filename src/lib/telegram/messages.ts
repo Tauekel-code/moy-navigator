@@ -77,7 +77,8 @@ export function reminderKeyboard(actionId: string, actionDate: string | null) {
     { text: "✅ Выполнено", callback_data: `done:${actionId}` },
     { text: "⏰ Перенести на час", callback_data: `snooze:${actionId}` },
   ];
-  const keyboard: { text: string; callback_data?: string; url?: string }[][] = [row];
+  // Кнопки «Выполнено/Перенести» работают только через webhook; без него (бот в polling-режиме) — только ссылка
+  const keyboard: { text: string; callback_data?: string; url?: string }[][] = process.env.TELEGRAM_WEBHOOK_SECRET ? [row] : [];
   if (appUrl) keyboard.push([{ text: "Открыть задачу", url: `${appUrl}/today${actionDate ? `?date=${actionDate}` : ""}` }]);
   return keyboard;
 }

@@ -84,3 +84,21 @@ export async function findUserByTelegramChatId(supabase: SupabaseClient, chatId:
   if (error) throw error;
   return data?.user_id ?? null;
 }
+
+/** Привязка без webhook: пользователь сам указывает Chat ID (нужно, когда бот уже работает в polling-режиме в другом проекте). */
+export async function connectTelegramManually(supabase: SupabaseClient, userId: string, chatId: string, username: string | null = null): Promise<void> {
+  const { error } = await supabase.from("telegram_connections").upsert(
+    {
+      user_id: userId,
+      telegram_chat_id: chatId,
+      telegram_username: username,
+      status: "connected",
+      connected_at: new Date().toISOString(),
+      connect_code: null,
+      connect_code_expires_at: null,
+    },
+    { onConflict: "user_id" },
+  );
+  if (error) throw error;
+  await supabase.from("notification_settings").update({ telegram_enabled: true }).eq("user_id", userId);
+}
