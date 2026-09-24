@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Timeline } from "@/components/timeline/Timeline";
 import { ActionModal } from "@/components/actions/ActionModal";
 import { DailyPlanPanel } from "./DailyPlanPanel";
+import { HintsPanel } from "./HintsPanel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
@@ -122,6 +123,7 @@ export function TodayView({ initialDate, timezone }: { initialDate: string; time
         <Stat label="Свободно" value={formatDuration(freeMinutes)} />
       </div>
 
+      {!loading && date === today && <HintsPanel onChanged={() => load(date)} />}
       {!loading && <DailyPlanPanel date={date} onOpenAction={setOpenActionId} />}
 
       {loading ? (

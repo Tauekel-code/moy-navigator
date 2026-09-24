@@ -319,7 +319,15 @@ function DataTab() {
         <p className="text-sm font-medium mb-2">Экспорт (раздел 39, 67)</p>
         <div className="flex flex-wrap gap-2">
           <ExportLink href="/api/export/json" label="JSON (полная копия)" />
-          <ExportLink href="/api/export/csv" label="CSV" />
+          <ExportLink href="/api/export/csv" label="CSV: задачи" />
+          <ExportLink href="/api/export/csv?type=goals" label="CSV: цели" />
+          <ExportLink href="/api/export/csv?type=life-areas" label="CSV: сферы" />
+          <ExportLink href="/api/export/csv?type=life-area-scores" label="CSV: оценки сфер" />
+          <ExportLink href="/api/export/csv?type=goal-scores" label="CSV: показатели целей" />
+          <ExportLink href="/api/export/csv?type=ideas" label="CSV: идеи" />
+          <ExportLink href="/api/export/csv?type=history" label="CSV: история" />
+          <ExportLink href="/api/export/csv?type=reviews" label="CSV: итоги дней" />
+          <ExportLink href="/api/export/csv?type=stats" label="CSV: статистика (90 дней)" />
           <ExportLink href="/api/export/ics" label="ICS" />
         </div>
       </div>

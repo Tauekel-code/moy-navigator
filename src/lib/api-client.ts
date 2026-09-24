@@ -2,11 +2,25 @@
 // через собственные API-маршруты (/api/*), которые уже применяют
 // серверный Supabase-клиент, RLS и валидацию (раздел 52, 79 ТЗ).
 
+import { enqueue, isQueueable } from "./offline-queue";
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    headers: { "Content-Type": "application/json", ...options?.headers },
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: { "Content-Type": "application/json", ...options?.headers },
+    });
+  } catch (err) {
+    const method = options?.method ?? "GET";
+    // Нет сети: безопасные операции откладываем в очередь и синхронизируем позже (раздел 25)
+    if (typeof window !== "undefined" && isQueueable(method, url)) {
+      enqueue(method, url, typeof options?.body === "string" ? options.body : null);
+      window.dispatchEvent(new CustomEvent("offline:queued"));
+      return { queued: true } as T;
+    }
+    throw err;
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

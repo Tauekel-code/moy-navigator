@@ -94,3 +94,20 @@ export function formatWeeklyReview(p: { completed: number; planned: number; rate
   lines.push("", "Откройте приложение, чтобы обновить оценки сфер и спланировать неделю.");
   return lines.join("\n");
 }
+
+/** Раздел 22: напоминание о целях с близким или прошедшим дедлайном. */
+export function formatGoalReminder(goals: { title: string; deadline: string }[], today: string): string {
+  const lines = ["🎯 <b>Цели и дедлайны</b>", ""];
+  for (const g of goals) {
+    const late = g.deadline < today;
+    lines.push(`• ${escapeHtml(g.title)} — ${late ? "срок прошёл" : "до"} ${g.deadline}`);
+  }
+  return lines.join("\r\n");
+}
+
+/** Раздел 6, 22: напоминание о неразобранных идеях. */
+export function formatIdeasReminder(count: number): string {
+  return `💡 <b>Входящие идеи</b>
+
+Неразобранных идей: ${count}. Выберите минуту, чтобы превратить их в задачи или цели.`;
+}

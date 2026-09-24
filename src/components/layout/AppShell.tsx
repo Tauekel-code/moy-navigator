@@ -9,6 +9,7 @@ import { NotificationsBell } from "./NotificationsBell";
 import { SearchModal } from "./SearchModal";
 import { ActionModal } from "@/components/actions/ActionModal";
 import { IdeaQuickCapture } from "@/components/ideas/IdeaQuickCapture";
+import { OfflineSync } from "./OfflineSync";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/Toast";
@@ -240,6 +241,7 @@ export function AppShell({ children, timezone, displayName }: Props) {
 
       <ActionModal open={createOpen} onClose={() => setCreateOpen(false)} onSaved={refresh} />
       <ActionModal open={!!openActionId} onClose={() => setOpenActionId(null)} actionId={openActionId} onSaved={refresh} />
+      <OfflineSync />
       <IdeaQuickCapture open={ideaOpen} onClose={() => setIdeaOpen(false)} onSaved={refresh} />
     </div>
   );

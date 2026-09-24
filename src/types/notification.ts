@@ -5,6 +5,8 @@ export type NotificationType =
   | "morning_plan"
   | "evening_review"
   | "weekly_review"
+  | "goal_reminder"
+  | "ideas_reminder"
   | "overdue"
   | "conflict"
   | "telegram_status"

@@ -32,6 +32,8 @@ alter type action_status add value if not exists 'deferred';
 
 -- Раздел 22: недельный обзор в Telegram
 alter type notification_type add value if not exists 'weekly_review';
+alter type notification_type add value if not exists 'goal_reminder';
+alter type notification_type add value if not exists 'ideas_reminder';
 
 -- ----------------------------------------------------------------------------
 -- Раздел 3: сферы жизни
