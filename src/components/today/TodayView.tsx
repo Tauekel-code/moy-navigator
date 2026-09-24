@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Timeline } from "@/components/timeline/Timeline";
 import { ActionModal } from "@/components/actions/ActionModal";
+import { DailyPlanPanel } from "./DailyPlanPanel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
@@ -120,6 +121,8 @@ export function TodayView({ initialDate, timezone }: { initialDate: string; time
         <Stat label="Перенесено" value={review?.postponedCount ?? 0} />
         <Stat label="Свободно" value={formatDuration(freeMinutes)} />
       </div>
+
+      {!loading && <DailyPlanPanel date={date} onOpenAction={setOpenActionId} />}
 
       {loading ? (
         <p className="text-sm text-foreground-muted text-center py-12">Загрузка…</p>

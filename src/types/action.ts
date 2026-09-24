@@ -41,7 +41,7 @@ export const ACTION_PRIORITY_LABELS: Record<ActionPriority, string> = {
   critical: "Критичный",
 };
 
-export type ActionStatus = "planned" | "in_progress" | "completed" | "overdue" | "cancelled";
+export type ActionStatus = "planned" | "in_progress" | "completed" | "overdue" | "cancelled" | "skipped" | "deferred";
 
 export const ACTION_STATUSES: ActionStatus[] = [
   "planned",
@@ -49,6 +49,8 @@ export const ACTION_STATUSES: ActionStatus[] = [
   "completed",
   "overdue",
   "cancelled",
+  "skipped",
+  "deferred",
 ];
 
 export const ACTION_STATUS_LABELS: Record<ActionStatus, string> = {
@@ -57,6 +59,8 @@ export const ACTION_STATUS_LABELS: Record<ActionStatus, string> = {
   completed: "Выполнено",
   overdue: "Просрочено",
   cancelled: "Отменено",
+  skipped: "Пропущено",
+  deferred: "Отложено",
 };
 
 export interface ActionContext {
@@ -113,6 +117,16 @@ export interface Action {
   reminderCount?: number;
   isRecurring?: boolean;
   occurrenceDate?: string; // для развёрнутого вхождения повторяющейся серии
+
+  // «Мой личный навигатор»: связь со сферой/целью/подцелью/идеей
+  lifeAreaId?: string | null;
+  lifeAreaName?: string | null;
+  lifeAreaColor?: string | null;
+  goalId?: string | null;
+  goalTitle?: string | null;
+  subgoalId?: string | null;
+  ideaId?: string | null;
+  actualMinutes?: number | null;
 }
 
 export interface ActionWithDetails extends Action {
@@ -142,4 +156,9 @@ export interface ActionInput {
   deadlineAt?: string | null;
   projectId?: string | null;
   contactId?: string | null;
+  lifeAreaId?: string | null;
+  goalId?: string | null;
+  subgoalId?: string | null;
+  ideaId?: string | null;
+  actualMinutes?: number | null;
 }

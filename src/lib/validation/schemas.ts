@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const actionTypeSchema = z.enum(["meeting", "task", "call", "work", "personal", "travel", "reminder", "other"]);
 export const actionPrioritySchema = z.enum(["low", "normal", "high", "critical"]);
-export const actionStatusSchema = z.enum(["planned", "in_progress", "completed", "overdue", "cancelled"]);
+export const actionStatusSchema = z.enum(["planned", "in_progress", "completed", "overdue", "cancelled", "skipped", "deferred"]);
 
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -27,6 +27,10 @@ export const actionInputSchema = z.object({
   deadlineAt: z.string().datetime().nullable().optional(),
   projectId: z.string().uuid().nullable().optional(),
   contactId: z.string().uuid().nullable().optional(),
+  lifeAreaId: z.string().uuid().nullable().optional(),
+  goalId: z.string().uuid().nullable().optional(),
+  subgoalId: z.string().uuid().nullable().optional(),
+  actualMinutes: z.number().int().positive().nullable().optional(),
 });
 
 export const actionUpdateSchema = actionInputSchema.partial();
@@ -104,6 +108,103 @@ export const userProfileSchema = z.object({
   language: z.enum(["ru", "kk", "en"]).optional(),
   timeFormat: z.enum(["12", "24"]).optional(),
   weekStart: z.number().int().min(0).max(6).optional(),
+  workStartTime: z.string().regex(timeRegex).optional(),
+  workEndTime: z.string().regex(timeRegex).optional(),
+});
+
+// --- «Мой личный навигатор» ---------------------------------------------
+
+export const lifeAreaInputSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  description: z.string().max(2000).nullable().optional(),
+  color: z.string().max(20).default("#6366f1"),
+  icon: z.string().max(50).nullable().optional(),
+});
+
+export const lifeAreaScoreInputSchema = z.object({
+  score: z.number().int().min(0).max(10),
+  desiredScore: z.number().int().min(0).max(10).nullable().optional(),
+  scoredAt: z.string().regex(dateRegex).optional(),
+  comment: z.string().max(2000).nullable().optional(),
+});
+
+export const goalTypeSchema = z.enum(["one_time", "long_term", "recurring"]);
+export const goalMetricTypeSchema = z.enum(["number", "percent", "money", "action_count", "score_0_10", "text"]);
+export const goalStatusSchema = z.enum(["active", "completed", "paused", "cancelled"]);
+
+export const goalInputSchema = z.object({
+  lifeAreaId: z.string().uuid().nullable().optional(),
+  title: z.string().trim().min(1).max(300),
+  description: z.string().max(4000).nullable().optional(),
+  goalType: goalTypeSchema.default("one_time"),
+  metricType: goalMetricTypeSchema.default("text"),
+  metricUnit: z.string().max(50).nullable().optional(),
+  currentValue: z.number().nullable().optional(),
+  targetValue: z.number().nullable().optional(),
+  startDate: z.string().regex(dateRegex),
+  deadline: z.string().regex(dateRegex).nullable().optional(),
+  priority: actionPrioritySchema.default("normal"),
+  status: goalStatusSchema.default("active"),
+  criteria: z.string().max(2000).nullable().optional(),
+  notes: z.string().max(4000).nullable().optional(),
+});
+
+export const goalUpdateSchema = goalInputSchema.partial();
+
+export const goalScoreInputSchema = z.object({
+  value: z.number(),
+  recordedAt: z.string().regex(dateRegex).optional(),
+  comment: z.string().max(2000).nullable().optional(),
+});
+
+export const subgoalStatusSchema = z.enum(["planned", "in_progress", "completed", "cancelled"]);
+
+export const subgoalInputSchema = z.object({
+  title: z.string().trim().min(1).max(300),
+  deadline: z.string().regex(dateRegex).nullable().optional(),
+  status: subgoalStatusSchema.default("planned"),
+  metricValue: z.number().nullable().optional(),
+  metricTarget: z.number().nullable().optional(),
+  metricUnit: z.string().max(50).nullable().optional(),
+});
+
+export const subgoalUpdateSchema = subgoalInputSchema.partial();
+
+export const ideaStatusSchema = z.enum(["new", "reviewing", "planned", "implemented", "postponed", "cancelled"]);
+export const ideaSourceSchema = z.enum(["text", "voice", "quick_add"]);
+
+export const ideaInputSchema = z.object({
+  text: z.string().trim().min(1).max(2000),
+  source: ideaSourceSchema.default("text"),
+  lifeAreaId: z.string().uuid().nullable().optional(),
+  goalId: z.string().uuid().nullable().optional(),
+  projectId: z.string().uuid().nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+});
+
+export const ideaUpdateSchema = z.object({
+  text: z.string().trim().min(1).max(2000).optional(),
+  status: ideaStatusSchema.optional(),
+  lifeAreaId: z.string().uuid().nullable().optional(),
+  goalId: z.string().uuid().nullable().optional(),
+  projectId: z.string().uuid().nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+});
+
+export const ideaConvertToTaskSchema = z.object({
+  actionDate: z.string().regex(dateRegex).nullable().optional(),
+  startTime: z.string().regex(timeRegex).nullable().optional(),
+});
+
+export const dailyPlanSaveSchema = z.object({
+  items: z.array(
+    z.object({
+      actionId: z.string().uuid(),
+      isRequired: z.boolean().default(false),
+      included: z.boolean().default(true),
+    }),
+  ),
+  status: z.enum(["accepted", "modified"]).default("accepted"),
 });
 
 export const notificationSettingsSchema = z.object({

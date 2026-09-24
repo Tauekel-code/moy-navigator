@@ -24,6 +24,8 @@ const ROW_SELECT = `
   select a.*,
     p.id as project_id, p.name as project_name, p.color as project_color,
     c.id as contact_id, c.name as contact_name,
+    la.name as life_area_name, la.color as life_area_color,
+    g.title as goal_title,
     (select count(*) from action_context ac where ac.action_id = a.id) as has_context,
     (select count(*) from action_results ar where ar.action_id = a.id) as has_result,
     (select count(*) from reminders r where r.action_id = a.id) as reminder_count
@@ -32,6 +34,8 @@ const ROW_SELECT = `
   left join projects p on p.id = apj.project_id
   left join action_contacts acn on acn.action_id = a.id and acn.is_primary = 1
   left join contacts c on c.id = acn.contact_id
+  left join life_areas la on la.id = a.life_area_id
+  left join goals g on g.id = a.goal_id
 `;
 
 export async function createAction(userId: string, input: ActionInput): Promise<Action> {
@@ -41,8 +45,8 @@ export async function createAction(userId: string, input: ActionInput): Promise<
   const duration = input.startTime && input.endTime ? minutesBetween(input.startTime, input.endTime) : (input.durationMinutes ?? null);
 
   db.prepare(
-    `insert into actions (id, user_id, title, type, action_date, start_time, end_time, duration_minutes, all_day, timezone, priority, status, deadline_at, created_at, updated_at)
-     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `insert into actions (id, user_id, title, type, action_date, start_time, end_time, duration_minutes, all_day, timezone, priority, status, deadline_at, life_area_id, goal_id, subgoal_id, idea_id, created_at, updated_at)
+     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     userId,
@@ -57,6 +61,10 @@ export async function createAction(userId: string, input: ActionInput): Promise<
     input.priority,
     input.status,
     input.deadlineAt ?? null,
+    input.lifeAreaId ?? null,
+    input.goalId ?? null,
+    input.subgoalId ?? null,
+    input.ideaId ?? null,
     now,
     now,
   );
@@ -104,6 +112,10 @@ export async function updateActionFields(
     deadlineAt: string | null;
     projectId: string | null;
     contactId: string | null;
+    lifeAreaId: string | null;
+    goalId: string | null;
+    subgoalId: string | null;
+    actualMinutes: number | null;
   }>,
   eventType: "updated" | "rescheduled" = "updated",
 ): Promise<Action> {
@@ -126,6 +138,10 @@ export async function updateActionFields(
   if (patch.allDay !== undefined) set("all_day", patch.allDay ? 1 : 0);
   if (patch.priority !== undefined) set("priority", patch.priority);
   if (patch.deadlineAt !== undefined) set("deadline_at", patch.deadlineAt);
+  if (patch.lifeAreaId !== undefined) set("life_area_id", patch.lifeAreaId);
+  if (patch.goalId !== undefined) set("goal_id", patch.goalId);
+  if (patch.subgoalId !== undefined) set("subgoal_id", patch.subgoalId);
+  if (patch.actualMinutes !== undefined) set("actual_minutes", patch.actualMinutes);
 
   if (patch.startTime !== undefined || patch.endTime !== undefined) {
     const st = patch.startTime ?? before.start_time;
@@ -394,6 +410,14 @@ export async function listActionsFiltered(userId: string, filters: ActionFilters
   if (filters.search) {
     clauses.push("a.title like ?");
     params.push(`%${filters.search}%`);
+  }
+  if (filters.goalId) {
+    clauses.push("a.goal_id = ?");
+    params.push(filters.goalId);
+  }
+  if (filters.lifeAreaId) {
+    clauses.push("a.life_area_id = ?");
+    params.push(filters.lifeAreaId);
   }
 
   const where = clauses.join(" and ");

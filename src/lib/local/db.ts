@@ -210,10 +210,164 @@ create table if not exists notifications_log (
   created_at text not null
 );
 create index if not exists idx_notifications_log_user on notifications_log(user_id, created_at);
+
+-- ===== «Мой личный навигатор» (Дополнение к ТЗ) =====
+
+create table if not exists life_areas (
+  id text primary key,
+  user_id text not null,
+  name text not null,
+  description text,
+  color text default '#6366f1',
+  icon text,
+  sort_order integer not null default 0,
+  is_archived integer not null default 0,
+  archived_at text,
+  created_at text not null,
+  updated_at text not null
+);
+
+create table if not exists life_area_scores (
+  id text primary key,
+  life_area_id text not null,
+  user_id text not null,
+  score integer not null,
+  desired_score integer,
+  scored_at text not null,
+  comment text,
+  created_at text not null
+);
+create index if not exists idx_life_area_scores_area on life_area_scores(life_area_id, scored_at);
+
+create table if not exists goals (
+  id text primary key,
+  user_id text not null,
+  life_area_id text,
+  title text not null,
+  description text,
+  goal_type text not null default 'one_time',
+  metric_type text not null default 'text',
+  metric_unit text,
+  current_value real,
+  target_value real,
+  start_date text not null,
+  deadline text,
+  priority text not null default 'normal',
+  status text not null default 'active',
+  criteria text,
+  notes text,
+  is_archived integer not null default 0,
+  archived_at text,
+  completed_at text,
+  created_at text not null,
+  updated_at text not null
+);
+create index if not exists idx_goals_life_area on goals(life_area_id);
+
+create table if not exists goal_scores (
+  id text primary key,
+  goal_id text not null,
+  user_id text not null,
+  value real not null,
+  recorded_at text not null,
+  comment text,
+  created_at text not null
+);
+create index if not exists idx_goal_scores_goal on goal_scores(goal_id, recorded_at);
+
+create table if not exists subgoals (
+  id text primary key,
+  goal_id text not null,
+  user_id text not null,
+  title text not null,
+  deadline text,
+  status text not null default 'planned',
+  metric_value real,
+  metric_target real,
+  metric_unit text,
+  sort_order integer not null default 0,
+  created_at text not null,
+  updated_at text not null,
+  completed_at text
+);
+create index if not exists idx_subgoals_goal on subgoals(goal_id);
+
+create table if not exists goal_history (
+  id text primary key,
+  goal_id text not null,
+  user_id text not null,
+  event_type text not null,
+  old_value text,
+  new_value text,
+  created_at text not null
+);
+create index if not exists idx_goal_history_goal on goal_history(goal_id, created_at);
+
+create table if not exists ideas (
+  id text primary key,
+  user_id text not null,
+  text text not null,
+  status text not null default 'new',
+  source text not null default 'text',
+  life_area_id text,
+  goal_id text,
+  project_id text,
+  converted_action_id text,
+  converted_goal_id text,
+  notes text,
+  is_archived integer not null default 0,
+  archived_at text,
+  created_at text not null,
+  updated_at text not null
+);
+create index if not exists idx_ideas_user on ideas(user_id, status);
+
+create table if not exists idea_history (
+  id text primary key,
+  idea_id text not null,
+  user_id text not null,
+  event_type text not null,
+  old_value text,
+  new_value text,
+  created_at text not null
+);
+create index if not exists idx_idea_history_idea on idea_history(idea_id, created_at);
+
+create table if not exists daily_plans (
+  id text primary key,
+  user_id text not null,
+  plan_date text not null,
+  status text not null default 'proposed',
+  generated_at text not null,
+  accepted_at text,
+  created_at text not null,
+  updated_at text not null,
+  unique (user_id, plan_date)
+);
+
+create table if not exists daily_plan_items (
+  id text primary key,
+  daily_plan_id text not null,
+  action_id text not null,
+  user_id text not null,
+  sort_order integer not null default 0,
+  is_required integer not null default 0,
+  included integer not null default 1,
+  created_at text not null,
+  unique (daily_plan_id, action_id)
+);
+create index if not exists idx_daily_plan_items_plan on daily_plan_items(daily_plan_id);
 `;
 
 declare global {
   var __localDb: DatabaseSync | undefined;
+}
+
+function ensureColumn(db: DatabaseSync, table: string, column: string, definition: string) {
+  const cols = db.prepare(`pragma table_info(${table})`).all() as { name: string }[];
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`alter table ${table} add column ${column} ${definition}`);
+  }
 }
 
 function initDb(): DatabaseSync {
@@ -223,6 +377,16 @@ function initDb(): DatabaseSync {
   db.exec("pragma journal_mode = WAL;");
   db.exec("pragma foreign_keys = on;");
   db.exec(SCHEMA);
+
+  // «Мой личный навигатор»: связь задач со сферами/целями + рабочее время профиля.
+  ensureColumn(db, "actions", "life_area_id", "text");
+  ensureColumn(db, "actions", "goal_id", "text");
+  ensureColumn(db, "actions", "subgoal_id", "text");
+  ensureColumn(db, "actions", "idea_id", "text");
+  ensureColumn(db, "actions", "actual_minutes", "integer");
+  ensureColumn(db, "user_profiles", "work_start_time", "text not null default '09:00'");
+  ensureColumn(db, "user_profiles", "work_end_time", "text not null default '19:00'");
+  ensureColumn(db, "user_profiles", "onboarding_completed_at", "text");
 
   const now = new Date().toISOString();
   const profileExists = db.prepare("select 1 from user_profiles where id = ?").get(LOCAL_USER_ID);
@@ -274,6 +438,16 @@ const ALL_TABLES = [
   "action_projects",
   "action_contacts",
   "daily_reviews",
+  "daily_plan_items",
+  "daily_plans",
+  "idea_history",
+  "ideas",
+  "goal_history",
+  "goal_scores",
+  "subgoals",
+  "goals",
+  "life_area_scores",
+  "life_areas",
   "actions",
   "recurrence_rules",
   "projects",

@@ -7,6 +7,11 @@ import type { DailyReview } from "@/types/review";
 import type { ActionHistoryEntry } from "@/types/history";
 import type { NotificationSettings, TelegramConnection } from "@/types/notification";
 import type { UserProfile } from "@/types/user";
+import type { LifeArea, LifeAreaScore } from "@/types/life-area";
+import type { Goal, Subgoal } from "@/types/goal";
+import type { Idea } from "@/types/idea";
+import type { DailyPlan, DailyPlanItem } from "@/types/daily-plan";
+import type { ActionEventType } from "@/types/history";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = Record<string, any>;
@@ -43,6 +48,14 @@ export function mapAction(row: Row): Action {
     hasResult: row.has_result ?? undefined,
     reminderCount: row.reminder_count ?? undefined,
     isRecurring: !!row.recurrence_rule_id,
+    lifeAreaId: row.life_area_id ?? undefined,
+    lifeAreaName: row.life_area_name ?? undefined,
+    lifeAreaColor: row.life_area_color ?? undefined,
+    goalId: row.goal_id ?? undefined,
+    goalTitle: row.goal_title ?? undefined,
+    subgoalId: row.subgoal_id ?? undefined,
+    ideaId: row.idea_id ?? undefined,
+    actualMinutes: row.actual_minutes ?? undefined,
   };
 }
 
@@ -213,7 +226,174 @@ export function mapUserProfile(row: Row): UserProfile {
     language: row.language,
     timeFormat: row.time_format,
     weekStart: row.week_start,
+    workStartTime: row.work_start_time ?? "09:00",
+    workEndTime: row.work_end_time ?? "19:00",
+    onboardingCompletedAt: row.onboarding_completed_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// «Мой личный навигатор» (Дополнение к ТЗ)
+// ---------------------------------------------------------------------------
+
+export function mapLifeArea(row: Row): LifeArea {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    description: row.description,
+    color: row.color,
+    icon: row.icon,
+    sortOrder: row.sort_order,
+    isArchived: !!row.is_archived,
+    archivedAt: row.archived_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    latestScore: row.latest_score ?? undefined,
+    latestDesiredScore: row.latest_desired_score ?? undefined,
+    latestScoreDate: row.latest_score_date ?? undefined,
+    goalsCount: row.goals_count ?? undefined,
+  };
+}
+
+export function mapLifeAreaScore(row: Row): LifeAreaScore {
+  return {
+    id: row.id,
+    lifeAreaId: row.life_area_id,
+    score: row.score,
+    desiredScore: row.desired_score,
+    scoredAt: row.scored_at,
+    comment: row.comment,
+    createdAt: row.created_at,
+  };
+}
+
+export function mapGoal(row: Row): Goal {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    lifeAreaId: row.life_area_id,
+    lifeAreaName: row.life_area_name ?? undefined,
+    lifeAreaColor: row.life_area_color ?? undefined,
+    title: row.title,
+    description: row.description,
+    goalType: row.goal_type,
+    metricType: row.metric_type,
+    metricUnit: row.metric_unit,
+    currentValue: row.current_value,
+    targetValue: row.target_value,
+    startDate: row.start_date,
+    deadline: row.deadline,
+    priority: row.priority,
+    status: row.status,
+    criteria: row.criteria,
+    notes: row.notes,
+    isArchived: !!row.is_archived,
+    archivedAt: row.archived_at,
+    completedAt: row.completed_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    tasksCount: row.tasks_count ?? undefined,
+    tasksCompletedCount: row.tasks_completed_count ?? undefined,
+    subgoalsCount: row.subgoals_count ?? undefined,
+    subgoalsCompletedCount: row.subgoals_completed_count ?? undefined,
+  };
+}
+
+export function mapSubgoal(row: Row): Subgoal {
+  return {
+    id: row.id,
+    goalId: row.goal_id,
+    title: row.title,
+    deadline: row.deadline,
+    status: row.status,
+    metricValue: row.metric_value,
+    metricTarget: row.metric_target,
+    metricUnit: row.metric_unit,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    completedAt: row.completed_at,
+  };
+}
+
+export function mapIdea(row: Row): Idea {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    text: row.text,
+    status: row.status,
+    source: row.source,
+    lifeAreaId: row.life_area_id,
+    lifeAreaName: row.life_area_name ?? undefined,
+    goalId: row.goal_id,
+    goalTitle: row.goal_title ?? undefined,
+    projectId: row.project_id,
+    projectName: row.project_name ?? undefined,
+    convertedActionId: row.converted_action_id,
+    convertedGoalId: row.converted_goal_id,
+    notes: row.notes,
+    isArchived: !!row.is_archived,
+    archivedAt: row.archived_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function mapDailyPlan(row: Row, items: DailyPlanItem[] = []): DailyPlan {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    planDate: row.plan_date,
+    status: row.status,
+    generatedAt: row.generated_at,
+    acceptedAt: row.accepted_at,
+    items,
+  };
+}
+
+export function mapDailyPlanItem(row: Row): DailyPlanItem {
+  return {
+    id: row.id,
+    dailyPlanId: row.daily_plan_id,
+    actionId: row.action_id,
+    sortOrder: row.sort_order,
+    isRequired: !!row.is_required,
+    included: !!row.included,
+  };
+}
+
+export interface GenericHistoryEntry {
+  id: string;
+  userId: string;
+  eventType: ActionEventType | string;
+  oldValue: Record<string, unknown> | null;
+  newValue: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export function mapGoalHistoryEntry(row: Row): GenericHistoryEntry & { goalId: string } {
+  return {
+    id: row.id,
+    goalId: row.goal_id,
+    userId: row.user_id,
+    eventType: row.event_type,
+    oldValue: row.old_value,
+    newValue: row.new_value,
+    createdAt: row.created_at,
+  };
+}
+
+export function mapIdeaHistoryEntry(row: Row): GenericHistoryEntry & { ideaId: string } {
+  return {
+    id: row.id,
+    ideaId: row.idea_id,
+    userId: row.user_id,
+    eventType: row.event_type,
+    oldValue: row.old_value,
+    newValue: row.new_value,
+    createdAt: row.created_at,
   };
 }

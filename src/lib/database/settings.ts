@@ -17,6 +17,10 @@ export async function getNotificationSettings(supabase: SupabaseClient, userId: 
   return isLocalMode() ? local.getNotificationSettings(userId) : cloud.getNotificationSettings(supabase, userId);
 }
 
+export async function completeOnboarding(supabase: SupabaseClient, userId: string): Promise<UserProfile> {
+  return isLocalMode() ? local.completeOnboarding(userId) : cloud.completeOnboarding(supabase, userId);
+}
+
 export async function updateNotificationSettings(
   supabase: SupabaseClient,
   userId: string,

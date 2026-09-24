@@ -1,0 +1,15 @@
+{
+  "name": "Мой личный навигатор",
+  "short_name": "Навигатор",
+  "description": "Персональный цифровой диспетчер: расписание, цели, сферы жизни, идеи",
+  "start_url": "/today",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f7f8",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

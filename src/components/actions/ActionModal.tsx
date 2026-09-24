@@ -18,6 +18,8 @@ import type { Project } from "@/types/project";
 import type { Contact } from "@/types/contact";
 import type { RecurrenceFreq } from "@/types/recurrence";
 import type { Reminder } from "@/types/reminder";
+import type { LifeArea } from "@/types/life-area";
+import type { Goal } from "@/types/goal";
 
 interface Props {
   open: boolean;
@@ -41,6 +43,8 @@ export function ActionModal({ open, onClose, actionId, defaultDate, defaultTime,
   const [saving, setSaving] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [lifeAreas, setLifeAreas] = useState<LifeArea[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [existing, setExisting] = useState<ActionWithDetails | null>(null);
 
@@ -55,6 +59,8 @@ export function ActionModal({ open, onClose, actionId, defaultDate, defaultTime,
   const [deadlineTime, setDeadlineTime] = useState("");
   const [projectId, setProjectId] = useState("");
   const [contactId, setContactId] = useState("");
+  const [lifeAreaId, setLifeAreaId] = useState("");
+  const [goalId, setGoalId] = useState("");
 
   const [enableRecurrence, setEnableRecurrence] = useState(false);
   const [recFreq, setRecFreq] = useState<RecurrenceFreq>("weekly");
@@ -89,6 +95,8 @@ export function ActionModal({ open, onClose, actionId, defaultDate, defaultTime,
     setDeadlineTime("");
     setProjectId("");
     setContactId("");
+    setLifeAreaId("");
+    setGoalId("");
     setEnableRecurrence(false);
     setRecFreq("weekly");
     setRecInterval(1);
@@ -112,6 +120,8 @@ export function ActionModal({ open, onClose, actionId, defaultDate, defaultTime,
 
     api.get<{ projects: Project[] }>("/api/projects").then((r) => setProjects(r.projects)).catch(() => {});
     api.get<{ contacts: Contact[] }>("/api/contacts").then((r) => setContacts(r.contacts)).catch(() => {});
+    api.get<{ lifeAreas: LifeArea[] }>("/api/life-areas").then((r) => setLifeAreas(r.lifeAreas)).catch(() => {});
+    api.get<{ goals: Goal[] }>("/api/goals?status=active").then((r) => setGoals(r.goals)).catch(() => {});
 
     if (masterId) {
       setLoading(true);
@@ -135,6 +145,8 @@ export function ActionModal({ open, onClose, actionId, defaultDate, defaultTime,
           }
           setProjectId(action.projectId ?? "");
           setContactId(action.contactId ?? "");
+          setLifeAreaId(action.lifeAreaId ?? "");
+          setGoalId(action.goalId ?? "");
           setWhyText(action.context?.whyText ?? "");
           setGoalText(action.context?.goalText ?? "");
           setDontForgetText(action.context?.dontForgetText ?? "");
@@ -172,6 +184,8 @@ export function ActionModal({ open, onClose, actionId, defaultDate, defaultTime,
         deadlineAt,
         projectId: projectId || null,
         contactId: contactId || null,
+        lifeAreaId: lifeAreaId || null,
+        goalId: goalId || null,
       };
 
       if (isEdit && masterId) {
@@ -394,6 +408,28 @@ export function ActionModal({ open, onClose, actionId, defaultDate, defaultTime,
                     {contacts.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="life-area">Сфера</Label>
+                  <Select id="life-area" value={lifeAreaId} onChange={(e) => setLifeAreaId(e.target.value)}>
+                    <option value="">Без сферы</option>
+                    {lifeAreas.map((la) => (
+                      <option key={la.id} value={la.id}>
+                        {la.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="goal">Цель</Label>
+                  <Select id="goal" value={goalId} onChange={(e) => setGoalId(e.target.value)}>
+                    <option value="">Без цели</option>
+                    {goals.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.title}
                       </option>
                     ))}
                   </Select>

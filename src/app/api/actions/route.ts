@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
       priority: priority ? (priority.split(",") as never) : undefined,
       projectId: searchParams.get("projectId") ?? undefined,
       contactId: searchParams.get("contactId") ?? undefined,
+      goalId: searchParams.get("goalId") ?? undefined,
+      lifeAreaId: searchParams.get("lifeAreaId") ?? undefined,
       from: from ?? undefined,
       to: to ?? undefined,
       includeArchived: searchParams.get("includeArchived") === "1",

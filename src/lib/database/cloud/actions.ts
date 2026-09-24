@@ -12,7 +12,9 @@ const ACTION_SELECT = `
   action_contacts!left ( is_primary, contact:contacts ( id, name ) ),
   action_context!left ( action_id ),
   action_results!left ( action_id ),
-  reminders!left ( id, is_sent )
+  reminders!left ( id, is_sent ),
+  life_area:life_areas ( name, color ),
+  goal:goals ( title )
 `;
 
 type ActionRow = Record<string, unknown> & {
@@ -21,6 +23,8 @@ type ActionRow = Record<string, unknown> & {
   action_context?: unknown[] | unknown;
   action_results?: unknown[] | unknown;
   reminders?: { id: string; is_sent: boolean }[];
+  life_area?: { name: string; color: string } | null;
+  goal?: { title: string } | null;
 };
 
 function flattenActionRow(row: ActionRow): Action {
@@ -37,6 +41,9 @@ function flattenActionRow(row: ActionRow): Action {
     has_context: Array.isArray(row.action_context) ? row.action_context.length > 0 : !!row.action_context,
     has_result: Array.isArray(row.action_results) ? row.action_results.length > 0 : !!row.action_results,
     reminder_count: Array.isArray(row.reminders) ? row.reminders.length : 0,
+    life_area_name: row.life_area?.name ?? null,
+    life_area_color: row.life_area?.color ?? null,
+    goal_title: row.goal?.title ?? null,
   });
 }
 
@@ -63,6 +70,10 @@ export async function createAction(
       priority: input.priority,
       status: input.status,
       deadline_at: input.deadlineAt,
+      life_area_id: input.lifeAreaId ?? null,
+      goal_id: input.goalId ?? null,
+      subgoal_id: input.subgoalId ?? null,
+      idea_id: input.ideaId ?? null,
     })
     .select()
     .single();
@@ -121,6 +132,10 @@ export async function updateActionFields(
     deadlineAt: string | null;
     projectId: string | null;
     contactId: string | null;
+    lifeAreaId: string | null;
+    goalId: string | null;
+    subgoalId: string | null;
+    actualMinutes: number | null;
   }>,
   eventType: "updated" | "rescheduled" = "updated",
 ): Promise<Action> {
@@ -136,6 +151,10 @@ export async function updateActionFields(
   if (patch.allDay !== undefined) dbPatch.all_day = patch.allDay;
   if (patch.priority !== undefined) dbPatch.priority = patch.priority;
   if (patch.deadlineAt !== undefined) dbPatch.deadline_at = patch.deadlineAt;
+  if (patch.lifeAreaId !== undefined) dbPatch.life_area_id = patch.lifeAreaId;
+  if (patch.goalId !== undefined) dbPatch.goal_id = patch.goalId;
+  if (patch.subgoalId !== undefined) dbPatch.subgoal_id = patch.subgoalId;
+  if (patch.actualMinutes !== undefined) dbPatch.actual_minutes = patch.actualMinutes;
 
   if (patch.startTime !== undefined || patch.endTime !== undefined) {
     const st = patch.startTime ?? before.start_time;
@@ -366,6 +385,8 @@ export interface ActionFilters {
   priority?: string[];
   projectId?: string;
   contactId?: string;
+  goalId?: string;
+  lifeAreaId?: string;
   from?: string;
   to?: string;
   includeArchived?: boolean;
@@ -394,6 +415,8 @@ export async function listActionsFiltered(
   if (filters.from) query = query.gte("action_date", filters.from);
   if (filters.to) query = query.lte("action_date", filters.to);
   if (filters.search) query = query.ilike("title", `%${filters.search}%`);
+  if (filters.goalId) query = query.eq("goal_id", filters.goalId);
+  if (filters.lifeAreaId) query = query.eq("life_area_id", filters.lifeAreaId);
 
   query = query
     .order("action_date", { ascending: true, nullsFirst: true })

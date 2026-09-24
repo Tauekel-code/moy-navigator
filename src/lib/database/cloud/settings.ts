@@ -22,7 +22,21 @@ export async function updateUserProfile(
       language: patch.language,
       time_format: patch.timeFormat,
       week_start: patch.weekStart,
+      work_start_time: patch.workStartTime,
+      work_end_time: patch.workEndTime,
     })
+    .eq("id", userId)
+    .select()
+    .single();
+  if (error) throw error;
+  return mapUserProfile(data);
+}
+
+/** Раздел 34: завершение первого запуска (мастер онбординга). */
+export async function completeOnboarding(supabase: SupabaseClient, userId: string): Promise<UserProfile> {
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .update({ onboarding_completed_at: new Date().toISOString() })
     .eq("id", userId)
     .select()
     .single();

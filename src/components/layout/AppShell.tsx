@@ -3,11 +3,12 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Plus, Search, Menu, X } from "lucide-react";
+import { Plus, Search, Menu, X, Lightbulb } from "lucide-react";
 import { NAV_ITEMS, MOBILE_PRIMARY_ITEMS, MOBILE_MORE_ITEMS } from "./nav-items";
 import { NotificationsBell } from "./NotificationsBell";
 import { SearchModal } from "./SearchModal";
 import { ActionModal } from "@/components/actions/ActionModal";
+import { IdeaQuickCapture } from "@/components/ideas/IdeaQuickCapture";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/Toast";
@@ -36,6 +37,7 @@ export function AppShell({ children, timezone, displayName }: Props) {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [ideaOpen, setIdeaOpen] = useState(false);
   const [openActionId, setOpenActionId] = useState<string | null>(null);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
 
@@ -48,6 +50,9 @@ export function AppShell({ children, timezone, displayName }: Props) {
       if (e.key === "n" || e.key === "N") {
         e.preventDefault();
         setCreateOpen(true);
+      } else if (e.key === "i" || e.key === "I") {
+        e.preventDefault();
+        setIdeaOpen(true);
       } else if (e.key === "/") {
         e.preventDefault();
         setSearchOpen(true);
@@ -94,7 +99,7 @@ export function AppShell({ children, timezone, displayName }: Props) {
     <div className="flex min-h-screen">
       <aside className="hidden md:flex md:w-60 shrink-0 flex-col border-r border-border bg-surface p-4">
         <div className="mb-6 px-2">
-          <p className="font-semibold text-sm">Моё расписание</p>
+          <p className="font-semibold text-sm">Мой навигатор</p>
           {displayName && <p className="text-xs text-foreground-muted mt-0.5">{displayName}</p>}
         </div>
 
@@ -118,12 +123,22 @@ export function AppShell({ children, timezone, displayName }: Props) {
           })}
         </nav>
 
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="mt-4 flex items-center justify-center gap-2 bg-accent text-accent-foreground rounded-xl h-11 text-sm font-medium hover:opacity-90"
-        >
-          <Plus size={16} /> Добавить
-        </button>
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex-1 flex items-center justify-center gap-2 bg-accent text-accent-foreground rounded-xl h-11 text-sm font-medium hover:opacity-90"
+          >
+            <Plus size={16} /> Добавить
+          </button>
+          <button
+            onClick={() => setIdeaOpen(true)}
+            className="shrink-0 flex items-center justify-center bg-surface-muted text-foreground rounded-xl h-11 w-11 hover:bg-border"
+            aria-label="Быстрая запись идеи (I)"
+            title="Быстрая запись идеи (I)"
+          >
+            <Lightbulb size={17} />
+          </button>
+        </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -131,7 +146,7 @@ export function AppShell({ children, timezone, displayName }: Props) {
           <button className="md:hidden p-2 -ml-2" onClick={() => setMobileMoreOpen(true)} aria-label="Меню">
             <Menu size={20} />
           </button>
-          <span className="md:hidden font-semibold text-sm">Моё расписание</span>
+          <span className="md:hidden font-semibold text-sm">Мой навигатор</span>
 
           <div className="hidden md:block flex-1" />
 
@@ -140,6 +155,13 @@ export function AppShell({ children, timezone, displayName }: Props) {
               <Search size={18} />
             </button>
             <NotificationsBell timezone={timezone} />
+            <button
+              onClick={() => setIdeaOpen(true)}
+              className="md:hidden p-2 rounded-xl hover:bg-surface-muted"
+              aria-label="Быстрая запись идеи"
+            >
+              <Lightbulb size={18} />
+            </button>
             <button
               onClick={() => setCreateOpen(true)}
               className="md:hidden p-2 rounded-xl bg-accent text-accent-foreground"
@@ -218,6 +240,7 @@ export function AppShell({ children, timezone, displayName }: Props) {
 
       <ActionModal open={createOpen} onClose={() => setCreateOpen(false)} onSaved={refresh} />
       <ActionModal open={!!openActionId} onClose={() => setOpenActionId(null)} actionId={openActionId} onSaved={refresh} />
+      <IdeaQuickCapture open={ideaOpen} onClose={() => setIdeaOpen(false)} onSaved={refresh} />
     </div>
   );
 }

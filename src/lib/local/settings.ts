@@ -29,9 +29,18 @@ export async function updateUserProfile(userId: string, patch: Partial<UserProfi
   if (patch.language !== undefined) set("language", patch.language);
   if (patch.timeFormat !== undefined) set("time_format", patch.timeFormat);
   if (patch.weekStart !== undefined) set("week_start", patch.weekStart);
+  if (patch.workStartTime !== undefined) set("work_start_time", patch.workStartTime);
+  if (patch.workEndTime !== undefined) set("work_end_time", patch.workEndTime);
 
   db.prepare(`update user_profiles set ${fields.join(", ")} where id = ?`).run(...values, userId);
 
+  const row = db.prepare("select * from user_profiles where id = ?").get(userId) as Row;
+  return mapUserProfile(row);
+}
+
+export async function completeOnboarding(userId: string): Promise<UserProfile> {
+  const db = getLocalDb();
+  db.prepare("update user_profiles set onboarding_completed_at = ? where id = ?").run(nowIso(), userId);
   const row = db.prepare("select * from user_profiles where id = ?").get(userId) as Row;
   return mapUserProfile(row);
 }
