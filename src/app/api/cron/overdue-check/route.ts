@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   const { data: candidates, error } = await supabase
     .from("actions")
-    .select("*, profile:user_profiles(timezone)")
+    .select("*")
     .in("status", ["planned", "in_progress"])
     .eq("is_archived", false)
     .not("action_date", "is", null)
@@ -31,11 +31,14 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const userIds = [...new Set((candidates ?? []).map((r) => r.user_id))];
+  const { data: profileRows } = userIds.length ? await supabase.from("user_profiles").select("id, timezone").in("id", userIds) : { data: [] };
+  const timezoneByUser = new Map((profileRows ?? []).map((p) => [p.id, p.timezone as string]));
+
   const overdueByUser = new Map<string, ReturnType<typeof mapAction>[]>();
 
   for (const row of candidates ?? []) {
-    const profile = (row as unknown as { profile: { timezone: string } | null }).profile;
-    const timezone = row.timezone ?? profile?.timezone ?? "UTC";
+    const timezone = row.timezone ?? timezoneByUser.get(row.user_id) ?? "UTC";
 
     const endTime = row.end_time ?? row.start_time;
     let overdueInstant: Date | null = null;

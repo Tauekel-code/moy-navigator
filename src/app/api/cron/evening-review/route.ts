@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { loadTelegramRecipients } from "@/lib/cron/recipients";
 import { verifyCronRequest } from "@/lib/cron/verify";
 import { isWithinWindow } from "@/lib/cron/time-window";
 import { generateOrUpdateDailyReview } from "@/lib/database/reviews";
@@ -17,13 +18,7 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
   const windowMinutes = 5;
 
-  const { data: settingsRows, error } = await supabase
-    .from("notification_settings")
-    .select("*, telegram:telegram_connections(*), profile:user_profiles(*)")
-    .eq("evening_review_enabled", true)
-    .eq("telegram_enabled", true);
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const settingsRows = await loadTelegramRecipients(supabase, "evening_review_enabled");
 
   let sent = 0;
 
