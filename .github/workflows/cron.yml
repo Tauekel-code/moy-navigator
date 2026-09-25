@@ -1,7 +1,7 @@
 # Планировщик уведомлений. Бесплатный тариф Vercel запускает cron только раз в сутки,
 # поэтому напоминания дёргает GitHub Actions (минимум — раз в 5 минут, запуск "по возможности").
 # Нужны секреты репозитория: APP_URL (например https://имя.vercel.app) и CRON_SECRET (тот же, что в Vercel).
-name: cron
+name: cron-notifications
 on:
   schedule:
     - cron: "*/5 * * * *"
