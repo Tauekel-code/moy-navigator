@@ -7,7 +7,7 @@ import type { Idea, IdeaInput, IdeaStatus } from "@/types/idea";
 import type { Action } from "@/types/action";
 import type { Goal } from "@/types/goal";
 
-const IDEA_SELECT = `*, life_area:life_areas ( name ), goal:goals ( title ), project:projects ( name )`;
+const IDEA_SELECT = `*, life_area:life_areas ( name ), goal:goals!ideas_goal_id_fkey ( title ), project:projects ( name )`;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function flattenIdea(row: any): Idea {

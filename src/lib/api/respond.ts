@@ -13,5 +13,9 @@ export function handleApiError(err: unknown) {
     if (err.message === "Не авторизован") return jsonError(err.message, 401);
     return jsonError(err.message, 400);
   }
+  // ошибки Supabase/PostgREST — простые объекты с полем message, а не Error
+  if (err && typeof err === "object" && "message" in err && typeof (err as { message: unknown }).message === "string") {
+    return jsonError((err as { message: string }).message, 400);
+  }
   return jsonError("Внутренняя ошибка", 500);
 }
