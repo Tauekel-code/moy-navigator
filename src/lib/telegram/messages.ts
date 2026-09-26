@@ -42,13 +42,22 @@ export function formatEveningReview(review: DailyReview, remaining: Action[]): s
   ];
 
   if (review.mainResult) {
-    lines.push("", "<b>Главный результат:</b>", escapeHtml(review.mainResult));
+    lines.push("", "<b>Что прошло хорошо:</b>", escapeHtml(review.mainResult));
   }
 
   if (remaining.length > 0) {
     lines.push("", "<b>Осталось:</b>");
     for (const a of remaining) lines.push(`• ${escapeHtml(a.title)}`);
   }
+
+  lines.push(
+    "",
+    "📝 <b>Дневник размышлений (10 минут):</b>",
+    "1. Что прошло хорошо?",
+    "2. Что прошло не так?",
+    "3. Что завтра сделаю конкретно по-другому?",
+    "Запишите ответы в приложении: Итоги дня.",
+  );
 
   return lines.join("\n");
 }

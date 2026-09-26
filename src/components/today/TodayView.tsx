@@ -23,6 +23,7 @@ export function TodayView({ initialDate, timezone }: { initialDate: string; time
   const [actions, setActions] = useState<Action[]>([]);
   const [review, setReview] = useState<DailyReview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [resolution, setResolution] = useState<{ date: string; text: string } | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [openActionId, setOpenActionId] = useState<string | null>(null);
 
@@ -47,6 +48,17 @@ export function TodayView({ initialDate, timezone }: { initialDate: string; time
   useEffect(() => {
     load(date);
   }, [date, load]);
+
+  // Дневник размышлений: показываем, что вы решили сделать по-другому в прошлый раз
+  useEffect(() => {
+    api
+      .get<{ reviews: DailyReview[] }>("/api/reviews?limit=7")
+      .then(({ reviews }) => {
+        const last = reviews.find((r) => r.reviewDate < today && r.importantTomorrow?.trim());
+        setResolution(last ? { date: last.reviewDate, text: last.importantTomorrow!.trim() } : null);
+      })
+      .catch(() => setResolution(null));
+  }, [today]);
 
   useEffect(() => {
     function goToday() {
@@ -123,6 +135,12 @@ export function TodayView({ initialDate, timezone }: { initialDate: string; time
         <Stat label="Свободно" value={formatDuration(freeMinutes)} />
       </div>
 
+      {!loading && date === today && resolution && (
+        <div className="mb-4 rounded-xl border border-border bg-surface-muted px-4 py-3">
+          <p className="text-xs text-foreground-muted mb-0.5">Вчерашний вывод ({formatHuman(resolution.date)}): сегодня делаю по-другому</p>
+          <p className="text-sm">{resolution.text}</p>
+        </div>
+      )}
       {!loading && date === today && <HintsPanel onChanged={() => load(date)} />}
       {!loading && <DailyPlanPanel date={date} onOpenAction={setOpenActionId} />}
 

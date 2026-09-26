@@ -55,7 +55,8 @@ export function ReviewDetailView({ date }: { date: string }) {
       </button>
 
       <h1 className="text-xl font-semibold capitalize mb-1">{formatHuman(date)}</h1>
-      <p className="text-sm text-foreground-muted capitalize mb-5">{weekdayLabel(date)}</p>
+      <p className="text-sm text-foreground-muted capitalize mb-2">{weekdayLabel(date)}</p>
+      <p className="text-sm text-foreground-muted mb-5">Дневник размышлений: 10 минут вечером. Ответ на третий вопрос завтра появится на странице «Сегодня».</p>
 
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-6">
         <Stat label="Запланировано" value={review.plannedCount} />
@@ -67,19 +68,19 @@ export function ReviewDetailView({ date }: { date: string }) {
 
       <div className="space-y-4">
         <div>
-          <Label>Главный результат дня</Label>
+          <Label>1. Что прошло хорошо?</Label>
           <Textarea value={notes.mainResult ?? ""} onChange={(e) => setNotes({ ...notes, mainResult: e.target.value })} />
         </div>
         <div>
-          <Label>Что не получилось?</Label>
+          <Label>2. Что прошло не так?</Label>
           <Textarea value={notes.whatFailed ?? ""} onChange={(e) => setNotes({ ...notes, whatFailed: e.target.value })} />
         </div>
         <div>
-          <Label>Что важно перенести?</Label>
+          <Label>3. Что завтра сделаю конкретно по-другому?</Label>
           <Textarea value={notes.importantTomorrow ?? ""} onChange={(e) => setNotes({ ...notes, importantTomorrow: e.target.value })} />
         </div>
         <div>
-          <Label>Что понял/узнал?</Label>
+          <Label>Заметка для себя (необязательно)</Label>
           <Textarea value={notes.personalNote ?? ""} onChange={(e) => setNotes({ ...notes, personalNote: e.target.value })} />
         </div>
         <Button onClick={saveNotes} disabled={saving}>
