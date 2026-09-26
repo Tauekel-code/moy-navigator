@@ -368,6 +368,39 @@ function DataTab() {
   );
 }
 
+function ChangePasswordForm() {
+  const { show } = useToast();
+  const [password, setPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    const { error } = await createClient().auth.updateUser({ password });
+    setSaving(false);
+    if (error) {
+      show(error.message, "error");
+      return;
+    }
+    setPassword("");
+    show("Пароль изменён. Входите с ним на телефоне", "success");
+  }
+
+  return (
+    <form onSubmit={handleSave} className="border border-border rounded-xl p-4 space-y-3">
+      <p className="text-sm font-medium">Сменить пароль</p>
+      <p className="text-xs text-foreground-muted">Задайте пароль, который запомните, — с ним можно войти с другого устройства.</p>
+      <div>
+        <Label>Новый пароль (минимум 8 символов)</Label>
+        <Input type="text" autoComplete="new-password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} />
+      </div>
+      <Button type="submit" disabled={saving || password.length < 8}>
+        {saving ? "Сохраняем…" : "Сменить пароль"}
+      </Button>
+    </form>
+  );
+}
+
 function SecurityTab() {
   const router = useRouter();
   const { show } = useToast();
@@ -402,6 +435,8 @@ function SecurityTab() {
 
   return (
     <div className="space-y-6">
+      {!local && <ChangePasswordForm />}
+
       {!local && (
         <Button variant="outline" onClick={handleSignOut}>
           Выйти из аккаунта
