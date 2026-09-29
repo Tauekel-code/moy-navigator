@@ -16,6 +16,14 @@ import type { ActionEventType } from "@/types/history";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = Record<string, any>;
 
+// Postgres-колонки типа time отдают "HH:MM:SS" через PostgREST, а вся валидация
+// и HTML-поля <input type="time"> в приложении работают с "HH:MM" — приводим здесь,
+// в одном месте, а не в каждом месте использования.
+function normalizeTime<T extends string | null | undefined>(value: T): T {
+  if (typeof value === "string" && value.length > 5) return value.slice(0, 5) as T;
+  return value;
+}
+
 export function mapAction(row: Row): Action {
   return {
     id: row.id,
@@ -23,8 +31,8 @@ export function mapAction(row: Row): Action {
     title: row.title,
     type: row.type,
     actionDate: row.action_date,
-    startTime: row.start_time,
-    endTime: row.end_time,
+    startTime: normalizeTime(row.start_time),
+    endTime: normalizeTime(row.end_time),
     durationMinutes: row.duration_minutes,
     allDay: row.all_day,
     timezone: row.timezone,
@@ -138,7 +146,7 @@ export function mapRecurrenceRule(row: Row): RecurrenceRule {
     interval: row.interval,
     rruleString: row.rrule_string,
     dtstart: row.dtstart,
-    dtstartTime: row.dtstart_time,
+    dtstartTime: normalizeTime(row.dtstart_time),
     untilDate: row.until_date,
     count: row.count,
     createdAt: row.created_at,
@@ -196,9 +204,9 @@ export function mapNotificationSettings(row: Row): NotificationSettings {
     inAppEnabled: row.in_app_enabled,
     telegramEnabled: row.telegram_enabled,
     morningPlanEnabled: row.morning_plan_enabled,
-    morningPlanTime: row.morning_plan_time,
+    morningPlanTime: normalizeTime(row.morning_plan_time),
     eveningReviewEnabled: row.evening_review_enabled,
-    eveningReviewTime: row.evening_review_time,
+    eveningReviewTime: normalizeTime(row.evening_review_time),
     overdueNotify: row.overdue_notify,
     conflictNotify: row.conflict_notify,
     defaultReminderOffsets: row.default_reminder_offsets ?? [],
@@ -226,8 +234,8 @@ export function mapUserProfile(row: Row): UserProfile {
     language: row.language,
     timeFormat: row.time_format,
     weekStart: row.week_start,
-    workStartTime: row.work_start_time ?? "09:00",
-    workEndTime: row.work_end_time ?? "19:00",
+    workStartTime: normalizeTime(row.work_start_time) ?? "09:00",
+    workEndTime: normalizeTime(row.work_end_time) ?? "19:00",
     onboardingCompletedAt: row.onboarding_completed_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
