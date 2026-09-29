@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { Trash2, Plus, X } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Trash2, Plus, X, Mic, Square } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select, Label } from "@/components/ui/Input";
@@ -9,6 +9,7 @@ import { ScopeDialog } from "./ScopeDialog";
 import { PostponeMenu } from "./PostponeMenu";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/api-client";
+import { getSpeechRecognition, type SpeechRecognitionCtor } from "@/lib/speech";
 import type { PostponeShortcut } from "@/lib/database/schedule";
 import { ACTION_TYPES, ACTION_TYPE_LABELS, ACTION_PRIORITIES, ACTION_PRIORITY_LABELS, ACTION_STATUSES, ACTION_STATUS_LABELS } from "@/types/action";
 import { REMINDER_PRESETS } from "@/types/reminder";
@@ -61,6 +62,35 @@ export function ActionModal({ open, onClose, actionId, defaultDate, defaultTime,
   const [contactId, setContactId] = useState("");
   const [lifeAreaId, setLifeAreaId] = useState("");
   const [goalId, setGoalId] = useState("");
+
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<InstanceType<SpeechRecognitionCtor> | null>(null);
+  const speechSupported = !!getSpeechRecognition();
+
+  function toggleVoice() {
+    const Recognition = getSpeechRecognition();
+    if (!Recognition) return;
+
+    if (listening) {
+      recognitionRef.current?.stop?.();
+      setListening(false);
+      return;
+    }
+
+    const recognition = new Recognition();
+    recognition.lang = "ru-RU";
+    recognition.interimResults = false;
+    recognition.onresult = (event: { results: { transcript: string }[][] }) => {
+      const transcript = event.results[0]?.[0]?.transcript ?? "";
+      setTitle((prev) => (prev ? `${prev} ${transcript}` : transcript));
+    };
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  }
 
   const [enableRecurrence, setEnableRecurrence] = useState(false);
   const [recFreq, setRecFreq] = useState<RecurrenceFreq>("weekly");
@@ -115,7 +145,11 @@ export function ActionModal({ open, onClose, actionId, defaultDate, defaultTime,
   }, [defaultDate, defaultTime]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      recognitionRef.current?.stop?.();
+      setListening(false);
+      return;
+    }
     reset();
 
     api.get<{ projects: Project[] }>("/api/projects").then((r) => setProjects(r.projects)).catch(() => {});
@@ -336,7 +370,20 @@ export function ActionModal({ open, onClose, actionId, defaultDate, defaultTime,
             <div className="space-y-4">
               <div>
                 <Label htmlFor="title">Что?</Label>
-                <Input id="title" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Позвонить клиенту" />
+                <div className="flex gap-2">
+                  <Input id="title" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Позвонить клиенту" />
+                  {speechSupported && (
+                    <Button
+                      type="button"
+                      variant={listening ? "danger" : "outline"}
+                      size="icon"
+                      onClick={toggleVoice}
+                      aria-label={listening ? "Остановить диктовку" : "Продиктовать"}
+                    >
+                      {listening ? <Square size={16} /> : <Mic size={16} />}
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

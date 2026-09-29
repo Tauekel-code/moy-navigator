@@ -7,22 +7,13 @@ import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/api-client";
+import { getSpeechRecognition, type SpeechRecognitionCtor } from "@/lib/speech";
 import type { IdeaSource } from "@/types/idea";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   onSaved?: () => void;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SpeechRecognitionCtor = new () => any;
-
-function getSpeechRecognition(): SpeechRecognitionCtor | null {
-  if (typeof window === "undefined") return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const w = window as any;
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
 /**
